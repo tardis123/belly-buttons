@@ -93,8 +93,9 @@ def metadata_sample(sample):
 def wfreq(sample):
 
     result = db.session.query(Metadata.WFREQ).\
-                                filter(Metadata.SAMPLEID ==sample.split('_')[1]).all()
-    return jsonify(result)
+                                filter(Metadata.SAMPLEID ==sample.split('_')[1]).first()
+    
+    return jsonify(int(result[0])) #Convert to integer
 
 @app.route("/samples/<sample>", methods=["GET"])
 # GET OTU and sample values for a given sample

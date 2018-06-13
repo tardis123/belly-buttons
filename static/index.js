@@ -4,6 +4,7 @@ var init_sample = 'BB_940';
     SampleData(init_sample);
     PieChart(init_sample);
     BubbleChart(init_sample);
+    Gauge(init_sample);
 };
 
 init();
@@ -31,6 +32,7 @@ function optionChanged(sample) {
     SampleData(sample);
     PieChart(sample);
     BubbleChart(sample);
+    Gauge(sample);
 }
 
 // SAMPLE DATA
@@ -46,16 +48,16 @@ function SampleData(sample) {
         var value_metadata = d3.values(data[0]);
         // Zip key and value data
         x = d3.zip(key_metadata, value_metadata);
-        console.log(key_metadata)
-        console.log(value_metadata)
-        console.log(x)
+        //console.log(key_metadata)
+        //console.log(value_metadata)
+        //console.log(x)
 
             // Set focus on sample_metadata div section and append sample values
             d3.select("#sample_metadata")
             .selectAll('div')
             .data(x)
             .enter()
-            .append('div')
+            .append('h6')
             .text(function(d){return d[0] + ": " + d[1];});
         });   
 };
@@ -127,11 +129,10 @@ function PieChart(sample) {
 function BubbleChart(sample) {
     
     // Refer to sample route and populate table
-    var sample_data = document.getElementById('sample_metadata');
     var url = `/samples/${sample}`;
     
     d3.json(url, function (error, data) {
-
+        if (error) return console.warn(error);
         // Remove sample_metadate elements for previous metadata
         d3.select('#bubbles').html("");
         // Grab JSON metadata key and values data
@@ -185,4 +186,90 @@ function BubbleChart(sample) {
 
         });
     });
+};
+
+// Create gauge
+function Gauge(sample) {
+    
+    // Refer to sample route and populate table
+    var url = `/wfreq/${sample}`;
+    Plotly.d3.json(url, function (error, data) {
+        if (error) return console.warn(error);
+        // Remove washing frequency elements for previous sample
+        //d3.select('#gauge').html("");
+                
+        console.log(data)
+
+        //Set focus on gauge div section and generate bubble chart
+        d3.select("#gauge")
+            .selectAll('div')
+            .data(data)
+            .enter()
+
+        // Convert to gauge scale:
+        // Highest washing frequency in the gauge chart is 9
+        // In order to match 9 with 180 degrees we need to multiple by 20
+        var level = data*20;
+        // Trig to calc meter point
+        var degrees = 180 - level,
+            radius = .5;
+        var radians = degrees * Math.PI / 180;
+        var x = radius * Math.cos(radians);
+        var y = radius * Math.sin(radians);
+
+        // Path: may have to change to create a better triangle
+        var mainPath = 'M -.0 -0.025 L .0 0.025 L ',
+            pathX = String(x),
+            space = ' ',
+            pathY = String(y),
+            pathEnd = ' Z';
+        var path = mainPath.concat(pathX,space,pathY,pathEnd);
+
+        var data = [{ type: 'scatter',
+        x: [0], y:[0],
+            marker: {size: 6, color:'850000'},
+            showlegend: false,
+            name: 'WFREQ',
+            text: data,
+            hoverinfo: 'text+name'},
+        { values: [50/9, 50/9, 50/9, 50/9, 50/9, 50/9, 50/9, 50/9, 50/9, 50],
+        rotation: 90,
+        text: ['8-9', '7-8', '6-7', '5-6', '4-5', '3-4', '2-3', '1-2', '0-1', ''],
+        textinfo: 'text',
+        textposition:'inside',
+        marker: {
+            colors:[
+                'rgba(0, 105, 11, .5)', 'rgba(10, 120, 22, .5)',
+                'rgba(14, 127, 0, .5)', 'rgba(110, 154, 22, .5)',
+                'rgba(170, 202, 42, .5)', 'rgba(202, 209, 95, .5)',
+                'rgba(210, 206, 145, .5)', 'rgba(232, 226, 202, .5)',
+                'rgba(240, 230, 215, .5)', 'rgba(255, 255, 255, 0)']},
+        labels: ['8-9', '7-8', '6-7', '5-6', '4-5', '3-4', '2-3', '1-2', '0-1', ''],
+        hoverinfo: 'label',
+        hole: .5,
+        type: 'pie',
+        showlegend: false
+        }];
+
+        var layout = {
+        shapes:[{
+            type: 'path',
+            path: path,
+            fillcolor: '850000',
+            line: {
+                color: '850000'
+            }
+            }],
+        title: '<b>Belly button washing frequency</b><br>scrubs per week',
+        height: 500,
+        width: 500,
+        xaxis: {zeroline:false, showticklabels:false,
+                    showgrid: false, range: [-1, 1]},
+        yaxis: {zeroline:false, showticklabels:false,
+                    showgrid: false, range: [-1, 1]}
+        };
+
+        Plotly.newPlot("gauge", data, layout);
+
+            });
 };
